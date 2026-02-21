@@ -2,7 +2,7 @@ import React, { useState, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Float, ContactShadows, PerspectiveCamera } from '@react-three/drei';
-import { Truck, User, Key, Play, Trophy, Package, Settings, Mail } from 'lucide-react';
+import { Truck, User, Key, Play, Trophy, Package, Settings, Mail, Globe } from 'lucide-react';
 
 const BuiltTruck = () => (
   <group scale={1.2} position={[0, -0.5, 0]}>
@@ -46,10 +46,22 @@ const BuiltBoss = () => (
   </group>
 );
 
-export default function App() {
-  const [role, setRole] = useState('Rider');
+export default function LoginPage({ onLogin }) {
+  const [role, setRole] = useState('driver'); // Matches App.jsx logic
   const [isLogin, setIsLogin] = useState(true);
-  const navigate = useNavigate();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleAuth = (e) => {
+    e.preventDefault();
+    if (isLogin) {
+      // Logic from App.jsx: 'boss' or 'driver'
+      onLogin(role); 
+    } else {
+      alert("Registration submitted to HQ for approval!");
+      setIsLogin(true);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#FF9F43] flex items-center justify-center p-8 font-[cursive] overflow-hidden">
@@ -59,9 +71,13 @@ export default function App() {
 
       <div className="relative z-10 w-full max-w-6xl h-[620px] flex bg-white border-8 border-black rounded-[40px] shadow-[15px_15px_0px_#000] overflow-hidden">
         
-        {/* LEFT SIDE */}
+        {/* LEFT SIDE: FORM */}
         <div className={`w-1/2 flex flex-col justify-center border-r-8 border-black bg-blue-50 text-left ${isLogin ? 'p-12' : 'p-12 py-8'}`}>
           <div className={isLogin ? 'mb-6' : 'mb-2'}>
+            <div className="flex items-center gap-3 mb-2">
+               <Globe className="text-blue-600 animate-spin-slow" size={32} />
+               <span className="bg-black text-white px-3 py-1 rounded-lg text-[10px] font-black tracking-widest uppercase border-2 border-[#f1c40f]">Network Active</span>
+            </div>
             <h1 className="text-6xl font-black text-[#222f3e] italic -rotate-2 drop-shadow-md">
               LogiSphere!
             </h1>
@@ -69,45 +85,68 @@ export default function App() {
               <p className="text-sm font-black text-black leading-tight uppercase">
                 🚚 THE ULTIMATE TRUCKING EMPIRE MANAGER!
               </p>
-              <p className="text-[10px] font-bold text-black opacity-80 uppercase">
-                Rule the roads, audit your fuel, and level up fleet.
-              </p>
             </div>
           </div>
 
-          <form className={isLogin ? 'space-y-4' : 'space-y-2'} onSubmit={(e) => e.preventDefault()}>
+          <form className={isLogin ? 'space-y-4' : 'space-y-2'} onSubmit={handleAuth}>
             <div className="space-y-2">
               {!isLogin && (
-                <input type="email" placeholder="EMAIL_ADDRESS" className="w-full bg-white border-4 border-black p-4 rounded-2xl font-black text-black outline-none focus:bg-yellow-50" />
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30" size={20} />
+                  <input type="email" placeholder="EMAIL_ADDRESS" className="w-full bg-white border-4 border-black p-4 pl-12 rounded-2xl font-black text-black outline-none focus:bg-yellow-50" />
+                </div>
               )}
-              <input type="text" placeholder="USERNAME_ID" className="w-full bg-white border-4 border-black p-4 rounded-2xl font-black text-black outline-none focus:bg-yellow-50" />
-              <input type="password" placeholder="SECRET_PASS" className="w-full bg-white border-4 border-black p-4 rounded-2xl font-black text-black outline-none focus:bg-yellow-50" />
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30" size={20} />
+                <input 
+                  type="text" 
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="USERNAME_ID" 
+                  className="w-full bg-white border-4 border-black p-4 pl-12 rounded-2xl font-black text-black outline-none focus:bg-yellow-50" 
+                  required
+                />
+              </div>
+              <div className="relative">
+                <Key className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30" size={20} />
+                <input 
+                  type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="SECRET_PASS" 
+                  className="w-full bg-white border-4 border-black p-4 pl-12 rounded-2xl font-black text-black outline-none focus:bg-yellow-50" 
+                  required
+                />
+              </div>
             </div>
 
             <div className="flex gap-4">
-              {['Boss', 'Rider'].map((r) => (
+              {[
+                { id: 'boss', label: '👑 BOSS' },
+                { id: 'driver', label: '🏁 DRIVER' }
+              ].map((r) => (
                 <button
-                  key={r}
+                  key={r.id}
                   type="button"
-                  onClick={() => setRole(r)}
+                  onClick={() => setRole(r.id)}
                   className={`flex-1 py-4 rounded-2xl font-black text-xl border-4 border-black transition-all transform active:translate-y-1
-                    ${role === r ? 'bg-[#1DD1A1] text-white shadow-[6px_6px_0px_#10ac84]' : 'bg-white text-black shadow-[6px_6px_0px_#ddd]'}`}
+                    ${role === r.id ? 'bg-[#1DD1A1] text-white shadow-[6px_6px_0px_#10ac84]' : 'bg-white text-black shadow-[6px_6px_0px_#ddd]'}`}
                 >
-                  {r === 'Boss' ? '👑 BOSS' : '🏁 RIDER'}
+                  {r.label}
                 </button>
               ))}
             </div>
 
             <button 
-              onClick={() => navigate('/dashboard')}
-              className="w-full bg-[#FF6B6B] text-white border-4 border-black p-5 rounded-2xl shadow-[8px_8px_0px_#000] active:translate-y-2 mt-2"
+              type="submit"
+              className="w-full bg-[#FF6B6B] text-white border-4 border-black p-5 rounded-2xl shadow-[8px_8px_0px_#000] active:translate-y-2 active:shadow-none transition-all mt-2"
             >
               <span className="text-3xl font-black italic flex items-center justify-center gap-4">
                 <Play className="w-8 h-8 fill-white" /> {isLogin ? 'START ENGINE!' : 'SIGN UP!'}
               </span>
             </button>
 
-            <p className="text-center font-black text-sm mt-4 cursor-pointer uppercase text-black" onClick={() => setIsLogin(!isLogin)}>
+            <p className="text-center font-black text-sm mt-4 cursor-pointer uppercase text-black hover:underline" onClick={() => setIsLogin(!isLogin)}>
               {isLogin ? "Need a new fleet? Create Account" : "Already have a key? Log In"}
             </p>
           </form>
@@ -122,7 +161,7 @@ export default function App() {
               <directionalLight position={[10, 10, 5]} intensity={2} castShadow />
               <Suspense fallback={null}>
                 <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
-                  {role === 'Rider' ? <BuiltTruck /> : <BuiltBoss />}
+                  {role === 'driver' ? <BuiltTruck /> : <BuiltBoss />}
                 </Float>
                 <ContactShadows position={[0, -1.2, 0]} opacity={0.5} scale={15} blur={2.5} far={4} />
               </Suspense>
