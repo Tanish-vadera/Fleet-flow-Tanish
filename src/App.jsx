@@ -14,7 +14,7 @@ import DriverManagement from './DriverManagement';
 const Expenses = () => {
   const navigate = useNavigate();
   return (
-    <div className="h-screen w-screen bg-[#00d2d3] flex items-center justify-center font-[cursive] p-6">
+    <div className="h-screen w-screen bg-[#00d2d3] flex items-center justify-center font-[cursive] p-6 text-black">
       <div className="bg-white border-[10px] border-black p-10 rounded-[50px] shadow-[20px_20px_0px_#000] w-full max-w-md">
         <div className="flex items-center gap-4 mb-8">
           <div className="bg-orange-100 p-3 rounded-2xl border-4 border-black">
@@ -45,7 +45,7 @@ const Expenses = () => {
 const Analytics = () => {
   const navigate = useNavigate();
   return (
-    <div className="h-screen w-screen bg-[#a29bfe] p-12 font-[cursive] overflow-hidden flex flex-col">
+    <div className="h-screen w-screen bg-[#a29bfe] p-12 font-[cursive] overflow-hidden flex flex-col text-black">
       <div className="flex justify-between items-center mb-10">
         <button onClick={() => navigate('/dashboard')} className="bg-black text-white px-8 py-4 rounded-3xl font-black text-xl flex items-center gap-3 shadow-[8px_8px_0px_#fff] active:translate-y-1 transition-all">
           <ArrowLeft strokeWidth={4} /> HANGAR
@@ -84,7 +84,6 @@ const Analytics = () => {
   );
 };
 
-// --- MAIN APP COMPONENT ---
 export default function App() {
   const [fleet, setFleet] = useState([
     { id: 'LS-01', name: 'APEX HAULER', color: '#3498db', hp: 95, util: 82, cap: 5000, status: 'Available' },
@@ -95,6 +94,25 @@ export default function App() {
     { id: 'D-101', name: 'Alex Thompson', license: 'Van', expiry: '2025-12-01', score: 98, status: 'Available' }
   ]);
 
+  const getAlerts = () => {
+    const alerts = [];
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    fleet.forEach(v => {
+      if (v.hp < 30) alerts.push({ id: v.id, type: 'CRITICAL', msg: `${v.name} needs urgent repair!`, time: now, path: '/maintenance' });
+      if (v.status === 'In Shop') alerts.push({ id: v.id, type: 'INFO', msg: `${v.name} is currently in shop.`, time: now, path: '/maintenance' });
+    });
+
+    drivers.forEach(d => {
+      if (new Date(d.expiry) < new Date()) {
+        alerts.push({ id: d.id, type: 'WARNING', msg: `Driver ${d.name}'s license EXPIRED!`, time: now, path: '/drivers' });
+      }
+    });
+
+    return alerts;
+  };
+
+  const currentAlerts = getAlerts();
   const addVehicle = (v) => setFleet([...fleet, { ...v, status: 'Available' }]);
   const addDriver = (d) => setDrivers([...drivers, d]);
   const updateStatus = (id, s) => setFleet(fleet.map(v => v.id === id ? { ...v, status: s } : v));
@@ -103,7 +121,7 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/" element={<LoginPage />} />
-        <Route path="/dashboard" element={<Dashboard fleet={fleet} />} />
+        <Route path="/dashboard" element={<Dashboard fleet={fleet} alerts={currentAlerts} />} />
         <Route path="/register" element={<RegisterVehiclePage onSave={addVehicle} fleetLength={fleet.length} />} />
         <Route path="/dispatch" element={<Dispatch fleet={fleet} drivers={drivers} />} />
         <Route path="/maintenance" element={<Maintenance fleet={fleet} setFleetStatus={updateStatus} />} />
