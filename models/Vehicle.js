@@ -1,0 +1,27 @@
+const mongoose = require("mongoose");
+
+const vehicleSchema = new mongoose.Schema({
+  vehicleId: {
+    type: String,
+    required: true,
+    unique: true
+  },
+
+  model: {
+    type: String,
+    required: true
+  },
+
+  capacity: {
+    type: Number,
+    required: true
+  },
+
+  status: {
+    type: String,
+    enum: ["Available", "On Trip", "In Shop"],
+    default: "Available"
+  }
+});
+
+module.exports = mongoose.model("Vehicle", vehicleSchema);
