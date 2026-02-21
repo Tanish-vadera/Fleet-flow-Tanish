@@ -44,22 +44,16 @@ function HangarVehicle({ color, hp }) {
   );
 }
 
-// FIXED: Added onLogout to props
 export default function Dashboard({ fleet = [], alerts = [], onLogout }) {
   const navigate = useNavigate();
   const [idx, setIdx] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const [notifications, setNotifications] = useState({});
   const [showAlerts, setShowAlerts] = useState(false);
 
-  useEffect(() => {
-    if (!fleet || fleet.length === 0) return;
-    const timer = setTimeout(() => {
-      const currentId = fleet[idx]?.id;
-      if (currentId) setNotifications(prev => ({ ...prev, [currentId]: true }));
-    }, 4000); 
-    return () => clearTimeout(timer);
-  }, [idx, fleet]);
+  const currentVehicle = fleet[idx] || fleet[0];
+  
+  // A vehicle has a notify state if it appears in the alerts array
+  const hasNotify = alerts.some(a => a.id === currentVehicle.id);
 
   const handleSearch = (val) => {
     setSearchQuery(val);
@@ -78,9 +72,6 @@ export default function Dashboard({ fleet = [], alerts = [], onLogout }) {
       </div>
     );
   }
-
-  const currentVehicle = fleet[idx] || fleet[0];
-  const hasNotify = notifications[currentVehicle.id];
 
   return (
     <div className="h-screen w-screen overflow-hidden relative bg-[#FF9F43] font-[cursive] text-black">
@@ -106,7 +97,6 @@ export default function Dashboard({ fleet = [], alerts = [], onLogout }) {
               {alerts.length > 0 && <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] px-2 py-0.5 rounded-full border-2 border-white">{alerts.length}</span>}
             </button>
 
-            {/* FIXED: Using onLogout prop here */}
             <button 
               onClick={onLogout}
               className="bg-white border-4 border-black p-3 rounded-2xl shadow-[4px_4px_0px_#000] hover:bg-red-500 hover:text-white transition-colors group flex items-center justify-center"
@@ -128,11 +118,6 @@ export default function Dashboard({ fleet = [], alerts = [], onLogout }) {
               className="bg-white border-4 border-black p-4 pl-12 pr-12 rounded-2xl font-black uppercase text-sm shadow-[6px_6px_0px_#000] outline-none w-[250px] focus:w-[320px] transition-all"
               onChange={(e) => handleSearch(e.target.value)}
             />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-4 top-1/2 -translate-y-1/2 hover:scale-110 active:scale-90">
-                <X size={20} className="text-red-500 stroke-[4px]" />
-              </button>
-            )}
           </div>
         </div>
 
@@ -150,11 +135,32 @@ export default function Dashboard({ fleet = [], alerts = [], onLogout }) {
         </div>
       </div>
 
-      {/* REST OF YOUR UI... */}
-      {/* (Alert Drawer, 3D Canvas, Navigation Arrows, and Bottom HUD stay the same) */}
-      
-      {/* ... keeping the rest of the code the same for the UI ... */}
-      
+      {/* NOTIFICATION DRAWER (RE-ADDED) */}
+      {showAlerts && (
+        <div className="absolute right-8 top-32 w-80 z-[200] animate-in fade-in slide-in-from-right-10">
+          <div className="bg-black text-white p-4 rounded-t-3xl border-x-8 border-t-8 border-white flex justify-between items-center">
+            <h3 className="font-black italic uppercase text-xl">System Alerts</h3>
+            <X size={20} className="cursor-pointer" onClick={() => setShowAlerts(false)} />
+          </div>
+          <div className="bg-white border-8 border-black rounded-b-3xl p-4 shadow-[10px_10px_0px_#000] max-h-[60vh] overflow-y-auto space-y-3">
+            {alerts.length === 0 ? (
+              <p className="text-center py-10 font-black opacity-30 uppercase text-xs">Systems Nominal</p>
+            ) : (
+              alerts.map((alert, i) => (
+                <div key={i} className="p-4 rounded-2xl border-4 border-black shadow-[4px_4px_0px_#000] bg-orange-50 transition-all hover:bg-white">
+                  <div className="flex justify-between mb-1">
+                    <span className="text-[8px] font-black bg-black text-white px-2 py-0.5 rounded uppercase">{alert.type}</span>
+                    <span className="text-[8px] font-black opacity-30">{alert.time}</span>
+                  </div>
+                  <p className="font-black text-xs leading-tight uppercase mb-2">{alert.msg}</p>
+                  <button onClick={() => navigate(alert.path)} className="w-full bg-yellow-400 border-2 border-black py-1 rounded-lg font-black text-[9px] uppercase shadow-[2px_2px_0px_#000]">RESOLVE ISSUE →</button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 3D HANGAR */}
       <div className="absolute inset-0 z-10">
         <Canvas shadows camera={{ position: [20, 15, 25], fov: 35 }}>
@@ -188,10 +194,12 @@ export default function Dashboard({ fleet = [], alerts = [], onLogout }) {
 
           <div className="space-y-4">
             <div className="flex items-center gap-4 bg-gray-100 border-4 border-black p-3 rounded-2xl relative">
-              <Shield size={20}/><div className="flex-1 h-3 bg-white border-2 border-black rounded-full overflow-hidden">
+              <Shield size={20}/>
+              <div className="flex-1 h-3 bg-white border-2 border-black rounded-full overflow-hidden">
                 <div className={`h-full ${currentVehicle.hp < 30 ? 'bg-red-500' : 'bg-green-500'}`} style={{ width: `${currentVehicle.hp || 0}%` }} />
               </div>
-              <button onClick={() => navigate('/maintenance')} className={`border-4 border-black p-2 rounded-lg ${hasNotify ? 'bg-red-500 text-white animate-custom-pulse' : 'bg-yellow-400'}`}>
+              {/* This button pulses if the vehicle has an alert */}
+              <button onClick={() => navigate('/maintenance')} className={`border-4 border-black p-2 rounded-lg transition-all ${hasNotify ? 'bg-red-500 text-white animate-custom-pulse' : 'bg-yellow-400'}`}>
                 <Wrench size={18} />
               </button>
             </div>
