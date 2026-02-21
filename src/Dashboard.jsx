@@ -2,7 +2,8 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Float, ContactShadows, Environment } from '@react-three/drei';
-import { Globe, ChevronLeft, ChevronRight, AlertTriangle, Activity, Shield, PlusCircle, Navigation, Wrench, Fuel } from 'lucide-react';
+// Make sure all these are installed/available
+import { Globe, ChevronLeft, ChevronRight, AlertTriangle, Activity, Shield, PlusCircle, Navigation, Wrench, Fuel, ShieldCheck } from 'lucide-react';
 
 const animationStyles = `
   @keyframes custom-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
@@ -26,7 +27,7 @@ function HangarVehicle({ color, hp }) {
         <group scale={[1.5, 1.5, 1.5]} position={[0, 1.3, 0]}>
           <mesh castShadow>
             <boxGeometry args={[4, 2.2, 8]} />
-            <meshStandardMaterial color={color} metalness={0.7} roughness={0.2} />
+            <meshStandardMaterial color={color || "#3498db"} metalness={0.7} roughness={0.2} />
           </mesh>
           <mesh position={[0, 1.2, 1.8]}>
             <boxGeometry args={[3.8, 1.8, 3.5]} />
@@ -38,38 +39,66 @@ function HangarVehicle({ color, hp }) {
   );
 }
 
-export default function Dashboard({ fleet }) {
+export default function Dashboard({ fleet = [] }) {
   const navigate = useNavigate();
   const [idx, setIdx] = useState(0);
-  
-  // Track notifications per vehicle ID
   const [notifications, setNotifications] = useState({});
 
   useEffect(() => {
+    if (!fleet || fleet.length === 0) return;
+    
     const timer = setTimeout(() => {
       const currentId = fleet[idx]?.id;
-      setNotifications(prev => ({ ...prev, [currentId]: true }));
+      if (currentId) {
+        setNotifications(prev => ({ ...prev, [currentId]: true }));
+      }
     }, 4000); 
 
     return () => clearTimeout(timer);
   }, [idx, fleet]);
 
-  if (!fleet || fleet.length === 0) return <div>Loading...</div>;
-  const currentVehicle = fleet[idx];
+  // CRITICAL: Prevent white screen if fleet is empty
+  if (!fleet || fleet.length === 0) {
+    return (
+      <div className="h-screen w-screen bg-[#FF9F43] flex items-center justify-center font-black text-4xl italic">
+        LOADING ASSETS...
+      </div>
+    );
+  }
+
+  const currentVehicle = fleet[idx] || fleet[0];
   const hasNotify = notifications[currentVehicle.id];
 
   return (
-    <div className="h-screen w-screen overflow-hidden relative bg-[#FF9F43] font-[cursive]">
+    <div className="h-screen w-screen overflow-hidden relative bg-[#FF9F43] font-[cursive] text-black">
       <style>{animationStyles}</style>
       
       {/* TOP HUD */}
       <div className="absolute top-0 inset-x-0 p-8 flex justify-between items-start z-[100]">
         <div className="bg-white border-[8px] border-black p-5 rounded-[35px] shadow-[8px_8px_0px_#000] -rotate-2">
-          <div className="flex items-center gap-2 text-blue-600"><Globe size={20}/><span className="text-[10px] font-black uppercase">LOGISPHERE</span></div>
+          <div className="flex items-center gap-2 text-blue-600">
+            <Globe size={20}/><span className="text-[10px] font-black uppercase">LOGISPHERE</span>
+          </div>
           <h1 className="text-4xl font-black italic uppercase leading-none">COMMAND</h1>
         </div>
-        <div className="bg-white border-[6px] border-black p-4 rounded-3xl shadow-[6px_6px_0px_#000] flex items-center gap-4">
-          <Activity className="text-blue-600"/><span className="text-xl font-black italic">{currentVehicle.util}% UTIL</span>
+
+        <div className="flex gap-4">
+          {/* DRIVER HUB BUTTON */}
+          <button 
+            onClick={() => navigate('/drivers')}
+            className="bg-[#ff7675] border-[6px] border-black p-4 rounded-3xl shadow-[6px_6px_0px_#000] flex items-center gap-4 hover:scale-105 active:translate-y-1 transition-all group"
+          >
+            <ShieldCheck className="text-white group-hover:rotate-12 transition-transform" size={32}/>
+            <div className="text-left">
+              <p className="text-[10px] font-black uppercase leading-none text-white/80">Safety Hub</p>
+              <span className="text-xl font-black italic text-white uppercase">DRIVERS</span>
+            </div>
+          </button>
+
+          <div className="bg-white border-[6px] border-black p-4 rounded-3xl shadow-[6px_6px_0px_#000] flex items-center gap-4">
+            <Activity className="text-blue-600"/>
+            <span className="text-xl font-black italic">{currentVehicle.util || 0}% UTIL</span>
+          </div>
         </div>
       </div>
 
@@ -85,7 +114,7 @@ export default function Dashboard({ fleet }) {
         </Canvas>
       </div>
 
-      {/* RESTORED NAV ARROWS */}
+      {/* NAVIGATION ARROWS */}
       <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-10 z-[120] pointer-events-none">
         <button 
           onClick={() => setIdx(p => (p - 1 + fleet.length) % fleet.length)} 
@@ -119,8 +148,9 @@ export default function Dashboard({ fleet }) {
             <div className="flex items-center gap-4 bg-gray-100 border-4 border-black p-3 rounded-2xl relative">
               <Shield size={20}/>
               <div className="flex-1 h-3 bg-white border-2 border-black rounded-full overflow-hidden">
-                <div className={`h-full ${currentVehicle.hp < 30 ? 'bg-red-500' : 'bg-green-500'}`} style={{ width: `${currentVehicle.hp}%` }} />
+                <div className={`h-full ${currentVehicle.hp < 30 ? 'bg-red-500' : 'bg-green-500'}`} style={{ width: `${currentVehicle.hp || 0}%` }} />
               </div>
+              
               <div className="relative">
                 {hasNotify && (
                   <div className="absolute -top-16 -left-10 bg-black text-white text-[10px] font-black p-3 rounded-xl animate-custom-bounce z-[200] shadow-[4px_4px_0px_#ff4757]">
@@ -137,21 +167,29 @@ export default function Dashboard({ fleet }) {
               </div>
             </div>
 
-            {/* FUEL BAR (NEW) */}
+            {/* FUEL BAR */}
             <div className="flex items-center gap-4 bg-gray-100 border-4 border-black p-3 rounded-2xl">
               <Fuel size={20}/>
               <div className="flex-1 h-3 bg-white border-2 border-black rounded-full overflow-hidden">
                 <div className="h-full bg-orange-400" style={{ width: '65%' }} />
               </div>
-              <p className="font-black text-xs">65%</p>
+              <button 
+                className="bg-black text-white p-2 rounded-lg font-black text-[10px] uppercase shadow-[2px_2px_0px_#fff]"
+                onClick={() => navigate('/expenses')}
+              >
+                LOG
+              </button>
             </div>
           </div>
         </div>
 
-        {/* MAIN BUTTONS */}
         <div className="flex gap-4">
-          <button onClick={() => navigate('/dispatch')} className="bg-[#6c5ce7] border-[10px] border-black p-8 rounded-[45px] shadow-[12px_12px_0px_#000] text-white font-black italic text-2xl uppercase flex items-center gap-4 hover:scale-105 active:translate-y-2"><Navigation size={28}/> DISPATCH</button>
-          <button onClick={() => navigate('/register')} className="bg-[#FF4757] border-[10px] border-black p-8 rounded-[45px] shadow-[12px_12px_0px_#000] text-white font-black italic text-2xl uppercase flex items-center gap-4 hover:scale-105 active:translate-y-2"><PlusCircle size={28}/> REGISTER</button>
+          <button onClick={() => navigate('/dispatch')} className="bg-[#6c5ce7] border-[10px] border-black p-8 rounded-[45px] shadow-[12px_12px_0px_#000] text-white font-black italic text-2xl uppercase flex items-center gap-4 hover:scale-105 active:translate-y-2">
+            <Navigation size={28}/> DISPATCH
+          </button>
+          <button onClick={() => navigate('/register')} className="bg-[#FF4757] border-[10px] border-black p-8 rounded-[45px] shadow-[12px_12px_0px_#000] text-white font-black italic text-2xl uppercase flex items-center gap-4 hover:scale-105 active:translate-y-2">
+            <PlusCircle size={28}/> REGISTER
+          </button>
         </div>
       </div>
     </div>
